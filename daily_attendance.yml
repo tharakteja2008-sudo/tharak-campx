@@ -1,0 +1,46 @@
+name: CampX Daily Attendance Email
+
+on:
+  schedule:
+    # Runs Monday through Saturday at 1:00 PM UTC (6:30 PM IST)
+    - cron: '30 13 * * 1-6'
+  workflow_dispatch: # Allows manual trigger from GitHub UI anytime
+
+jobs:
+  track-attendance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run CampX Attendance Tracker
+        env:
+          CAMPX_BASE_URL: ${{ secrets.CAMPX_BASE_URL || 'https://svce.campx.in' }}
+          CAMPX_API_URL: ${{ secrets.CAMPX_API_URL || 'https://api.campx.in' }}
+          CAMPX_USERNAME: ${{ secrets.CAMPX_USERNAME || '25BFA32091' }}
+          CAMPX_PASSWORD: ${{ secrets.CAMPX_PASSWORD || '25BFA32091' }}
+          CAMPX_TENANT: ${{ secrets.CAMPX_TENANT || 'svce' }}
+          CAMPX_INSTITUTION: ${{ secrets.CAMPX_INSTITUTION || 'svce' }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL || 'tharakteja2008@gmail.com' }}
+          SENDER_APP_PASSWORD: ${{ secrets.SENDER_APP_PASSWORD || 'udzdkjvdjsuxhwso' }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL || 'tharakteja2008@gmail.com' }}
+        run: |
+          python campx_tracker.py
+
+      - name: Commit and Push Updated History
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add attendance_history.json
+          git commit -m "chore: update attendance history [skip ci]" || echo "No changes to commit"
+          git push
